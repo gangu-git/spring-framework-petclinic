@@ -1,0 +1,41 @@
+pipeline{
+    agent any
+    stages{
+        stage('get som code from git repo'){
+            steps {
+                git 'https://github.com/gangu-git/mahalogin.git'
+            }
+        }
+        stage('maven compile'){
+            steps{
+                sh 'mvn compile'
+            }
+        }
+        stage('mvn testing'){
+            steps{
+                sh 'mvn test'
+            }
+        }
+        stage('mvn package'){
+          steps{
+              sh 'mvn package'
+          }
+      }
+      stage('deployment'){
+          steps {
+              sh label: '', script: '''mkdir springpet
+cd springpet
+cp /var/lib/jenkins/workspace/spring-petclinic/target/petclinic.war  .
+touch Dockerfile
+cat<<EOT>>Dockerfile
+FROM tomcat
+COPY petclinic.war  /usr/local/tomcat/webapps
+EXPOSE 8080
+CMD [ "catalina.sh", "run" ]
+EOT
+sudo docker build -t springpetimage .
+sudo docker run -d --name springpetcon -p 8889:8080 springpetimage'''
+          }
+      }
+    }
+}
